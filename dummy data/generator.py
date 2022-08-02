@@ -74,5 +74,7 @@ df = pd.DataFrame(data, columns = ["icao", "timestamp", "event"])
 df_anomaly = pd.DataFrame(anomaly_labels, columns = ['timestamp', 'type'])
 df = df.sort_values("timestamp")
 print(len(data))
+
+#destination files for data and anomalies
 df.to_csv('C:\\Users\\dmitr\\Desktop\\project work\\dummy data\\data.csv')
 df_anomaly.to_csv('C:\\Users\\dmitr\\Desktop\\project work\\dummy data\\data_anomaly_labels.csv')

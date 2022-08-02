@@ -4,6 +4,7 @@ from scipy.stats import chi2
 import sys
 import numpy as np
 
+#signatures file reading
 df = pd.read_csv('C:\\Users\\dmitr\\Desktop\\project work\\dummy data\\signatures_3_7.0_1.0_time__daytime_.csv')
 df.head()
 

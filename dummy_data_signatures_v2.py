@@ -29,6 +29,7 @@ normalising_signature = False
 scale_signature = False
 preprocess_signature_columnwise = False
 
+#data files reading
 relevant_events = pd.read_csv('C:\\Users\\dmitr\\Desktop\\project work\\dummy data\\data.csv')
 anomalous_events_labels = pd.read_csv('C:\\Users\\dmitr\\Desktop\\project work\\dummy data\\data_anomaly_labels.csv')
 anomalous_events_timestamps = set(anomalous_events_labels['timestamp'].values.tolist())
@@ -136,9 +137,11 @@ for stream in split_stream:
 print(len(signatures))
 
 df = pd.DataFrame(signatures)
+#desination file name
 filename = 'C:\\Users\\dmitr\\Desktop\\project work\\dummy data\\signatures_' + str(depth) +'_'+ str(stream_length / day) +'_' + str(stream_spacing / day) +'_time_' * time_variable + '_daytime_' * daytime_variable  + '.csv'
 
 anomaly_count_labels = pd.DataFrame(anomaly_count)
+#destination file name
 anomaly_count_filename = 'C:\\Users\\dmitr\\Desktop\\project work\\dummy data\\signatures_' + str(depth) +'_'+ str(stream_length / day) + '_' + str(stream_spacing / day) +'_time_' * time_variable + '_daytime_' * daytime_variable  + '_ANOMALYCOUNT_' + '.csv'
 
 
