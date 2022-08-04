@@ -1,0 +1,7 @@
+Tasks:
+
+1) Create pipeline - automatic model evaluation with multiple different metrics from sckitlearn
+2) Try different methodology - different data encoding, different evaluation, different anomaly types, different preprocessing 
+3) compare above against each other, recording results
+4) Try methodology on real dataset (preprocessed)
+5) Summarise methodology and results in Jupyter notebook

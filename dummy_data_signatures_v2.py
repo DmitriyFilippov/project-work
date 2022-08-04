@@ -16,11 +16,11 @@ day = 86400
 
 #observed airports -> oa
 oa = [np.int_(0), np.int_(1), np.int_(2), np.int_(3), np.int_(4)]
-depth = 3
+depth = 2
 time_variable = True
 daytime_variable = True
 stream_length = 7 * day
-stream_spacing = 1 * day
+stream_spacing = 2 * day
 
 normalising_data = False 
 scale_data = True
@@ -140,7 +140,7 @@ df = pd.DataFrame(signatures)
 #desination file name
 filename = 'C:\\Users\\dmitr\\Desktop\\project work\\dummy data\\signatures_' + str(depth) +'_'+ str(stream_length / day) +'_' + str(stream_spacing / day) +'_time_' * time_variable + '_daytime_' * daytime_variable  + '.csv'
 
-anomaly_count_labels = pd.DataFrame(anomaly_count)
+anomaly_count_labels = pd.DataFrame(anomaly_count, columns = ["count"])
 #destination file name
 anomaly_count_filename = 'C:\\Users\\dmitr\\Desktop\\project work\\dummy data\\signatures_' + str(depth) +'_'+ str(stream_length / day) + '_' + str(stream_spacing / day) +'_time_' * time_variable + '_daytime_' * daytime_variable  + '_ANOMALYCOUNT_' + '.csv'
 
