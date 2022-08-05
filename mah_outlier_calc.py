@@ -5,13 +5,15 @@ from sklearn.metrics import roc_auc_score
 from sklearn.covariance import EmpiricalCovariance, MinCovDet
 import sys
 import numpy as np
+from sklearn.ensemble import IsolationForest
 
 #signatures file reading
 df = pd.read_csv('C:\\Users\\dmitr\\Desktop\\project work\\dummy data\\signatures_2_7.0_2.0_time__daytime_.csv')
-df.head()
+df_clean = pd.read_csv('C:\\Users\\dmitr\\Desktop\\project work\\dummy data\\signatures_2_7.0_2.0_time__daytime_CLEAN.csv')
 
 df = df.dropna()
 signatures = df.to_numpy()
+clean_signatures = df_clean.to_numpy()
 outlier_count_pd = pd.read_csv('C:\\Users\\dmitr\\Desktop\\project work\\dummy data\\signatures_2_7.0_2.0_time__daytime__ANOMALYCOUNT_.csv')
 outlier_count = outlier_count_pd['count'].to_numpy()
 labels = [outlier_count[i] > 0 for i in range(len(outlier_count))]
@@ -45,7 +47,7 @@ def mah_distance():
       print(evaluate(certainty, labels))
 
 # MAH distance with robust covariance estimation
-
+'''
 # fit a MCD robust estimator to data
 robust_cov = MinCovDet().fit(signatures).covariance_ + np.identity(dim) * 1e-6
 robust_cov_pm1 = np.linalg.matrix_power(robust_cov, -1)
@@ -77,8 +79,30 @@ print(evaluate(robust_certainty , labels))
 print("evaluate emp mah")
 print(evaluate(emp_certainty , labels))
 
+'''
 
+#Isolation Forest
 
+def isolation_forest():
+      best_performance = 0
+      samp = 20
+      est = 130
+      feat = 1.0
 
+      rng = np.random.RandomState(42)
+      clf = IsolationForest(max_samples=samp, n_estimators=est, max_features= feat, random_state=rng, n_jobs = -1)
+      clf.fit(clean_signatures) 
+      
+      outlier_predict = clf.predict(signatures)
+      predict_label = []
+      for i in range(len(outlier_predict)):
+            if outlier_predict[i] == -1:
+                  predict_label.append(1)
+            else:
+                  predict_label.append(0)
 
+      print("evaluate isolation forest")
+      print(evaluate(predict_label, labels))
+
+isolation_forest()
 mah_distance()

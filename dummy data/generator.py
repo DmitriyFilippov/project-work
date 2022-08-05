@@ -4,6 +4,7 @@ import esig
 import random
 
 data = []
+clean_data = []
 
 times = [
 [0, 3*3600, 0, 0, 4*3600],
@@ -20,7 +21,15 @@ anomaly_chaining_delay_right = 12000
 flight_len_spread = 0.2
 
 timestamp = 0
+timestamp_2 = 0
 anomaly_labels = []
+
+for i in range(500000):
+    timestamp_2 += (169 + random.randrange(-60, 60))
+    (a, b) = random.choice(edges)
+    delay = times[a][b] * (random.random() * flight_len_spread + (1 - flight_len_spread/2))
+    clean_data.append([a, timestamp_2, "departed"])
+    clean_data.append([b, timestamp_2+delay, "landed"])
 
 for i in range(200000):
     timestamp += (169 + random.randrange(-60, 60))
@@ -72,9 +81,11 @@ for i in range(100000):
 
 df = pd.DataFrame(data, columns = ["icao", "timestamp", "event"])
 df_anomaly = pd.DataFrame(anomaly_labels, columns = ['timestamp', 'type'])
+df_clean = pd.DataFrame(clean_data, columns = ["icao", "timestamp", "event"])
 df = df.sort_values("timestamp")
-print(len(data))
+df_clean = df_clean.sort_values("timestamp")
 
 #destination files for data and anomalies
 df.to_csv('C:\\Users\\dmitr\\Desktop\\project work\\dummy data\\data.csv')
+df_clean.to_csv('C:\\Users\\dmitr\\Desktop\\project work\\dummy data\\clean_data.csv')
 df_anomaly.to_csv('C:\\Users\\dmitr\\Desktop\\project work\\dummy data\\data_anomaly_labels.csv')
