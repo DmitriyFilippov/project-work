@@ -22,6 +22,11 @@ daytime_variable = True
 stream_length = 7 * day
 stream_spacing = 2 * day
 
+no_extrapollation = False
+lead_lag = False
+
+features = len(oa) * 2  + time_variable + daytime_variable
+
 normalising_data = False 
 scale_data = True
 preprocess_data_columnwise = False
@@ -108,15 +113,31 @@ for _, row in clean_events.iterrows():
 
     for i in range(window_left, window_right):
         if len(clean_split_stream[i]) == 0:
-            entry = [0.0 for i in range(len(oa) * 2 + time_variable + daytime_variable)]
+            entry = [0.0 for i in range(features * (1 + lead_lag))]
         else:
             entry = clean_split_stream[i][-1].copy()
-        entry[index] += 1
-        if time_variable:
-            entry[-1] = row['timestamp']
-        if daytime_variable:  
-            entry[-1 - time_variable] = row['timestamp'] % day
-        clean_split_stream[i].append(entry)
+        if (lead_lag):
+            old_entry = entry[:features]
+            if time_variable:
+                entry[features - 1] = row['timestamp']
+            if daytime_variable:
+                entry[features - 1 - time_variable] = row['timestamp'] % day
+            if no_extrapollation:
+                clean_split_stream[i].append(entry.copy())
+            entry[index] += 1
+            if no_extrapollation:
+                clean_split_stream[i].append(entry.copy())
+            entry[features:] = old_entry
+            clean_split_stream[i].append(entry.copy())
+        else:
+            if time_variable:
+                entry[-1] = row['timestamp']
+            if daytime_variable:
+                entry[-1 - time_variable] = row['timestamp'] % day
+            if no_extrapollation:
+                clean_split_stream[i].append(entry.copy())
+            entry[index] += 1
+            clean_split_stream[i].append(entry.copy())
 
 clean_signatures = []
 
@@ -130,7 +151,7 @@ for stream in clean_split_stream:
 
 clean_df = pd.DataFrame(clean_signatures)
 #desination file name
-clean_filename = 'C:\\Users\\dmitr\\Desktop\\project work\\dummy data\\signatures_' + str(depth) +'_'+ str(stream_length / day) +'_' + str(stream_spacing / day) +'_time_' * time_variable + '_daytime_' * daytime_variable  + 'CLEAN.csv'
+clean_filename = 'C:\\Users\\dmitr\\Desktop\\project work\\dummy data\\signatures_' + str(depth) +'_'+ str(stream_length / day) +'_' + str(stream_spacing / day) +'_time_' * time_variable + '_daytime_' * daytime_variable + '_leadlag_' * lead_lag+ '_no_extrapolation_' * no_extrapollation + 'CLEAN.csv'
 
 
 clean_df.to_csv(clean_filename)

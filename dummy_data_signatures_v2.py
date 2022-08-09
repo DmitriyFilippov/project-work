@@ -15,16 +15,7 @@ np.set_printoptions(threshold=sys.maxsize)
 day = 86400
 
 #observed airports -> oa
-oa = [np.int_(0), np.int_(1), np.int_(2), np.int_(3), np.int_(4)]
-depth = 2
-time_variable = True
-daytime_variable = True
-stream_length = 7 * day
-stream_spacing = 2 * day
-
-no_extrapollation = True
-lead_lag = False
-
+observed = [np.int_(0), np.int_(1), np.int_(2), np.int_(3), np.int_(4)]
 normalising_data = False 
 scale_data = True
 preprocess_data_columnwise = False
@@ -33,14 +24,13 @@ scale_signature = False
 preprocess_signature_columnwise = False
 
 #data files reading
-relevant_events = pd.read_csv('C:\\Users\\dmitr\\Desktop\\project work\\dummy data\\data.csv')
+
 clean_events = pd.read_csv('C:\\Users\\dmitr\\Desktop\\project work\\dummy data\\clean_data.csv')
 anomalous_events_labels = pd.read_csv('C:\\Users\\dmitr\\Desktop\\project work\\dummy data\\data_anomaly_labels.csv')
 anomalous_events_timestamps = set(anomalous_events_labels['timestamp'].values.tolist())
-relevant_events = relevant_events[relevant_events["icao"].isin(oa)]
-clean_events = clean_events[clean_events["icao"].isin(oa)]
 
-def normalise_stream(stream):
+
+def normalise_stream(stream, time_variable = True, daytime_variable = True, scale_data = False, preprocess_data_columnwise = False):
     if normalising_data:
         if preprocess_data_columnwise:
             stream_norm = normalize(stream, axis = 0)
@@ -88,148 +78,82 @@ def normalise_signature(sig):
     return sig
 
 
+def paths(event, anomalous_events_timestamps, observed,  stream_length, stream_spacing, time_variable = True, daytime_variable = True, no_extrapollation = True, lead_lag = False):
+    event = event[event["icao"].isin(observed)]
+    features = len(observed) * 2  + time_variable + daytime_variable
+    split_stream = []
+    ends = []
+    anomaly_count = []
+    window_left = 0
+    window_right = 0
+    new_stream_delay = event['timestamp'][0] - 1
+    
 
+    for _, row in event.iterrows():
+        time = row['timestamp']
+        if time > new_stream_delay:
+            split_stream.append([])
+            anomaly_count.append(0)
+            ends.append(time + stream_length)
+            window_right += 1
+            new_stream_delay += stream_spacing
+        while window_left > window_right or time > ends[window_left]:
+            window_left += 1
 
-split_stream = []
-ends = []
-anomaly_count = []
-window_left = 0
-window_right = 0
-new_stream_delay = relevant_events['timestamp'][0] - 1
+        index = 0
+        for i in range(len(observed)):
+            if row['icao'] == observed[i]:
+                index = 2 * i
+        if row['event'] == 'departed':
+            index += 1
 
-for _, row in relevant_events.iterrows():
-    time = row['timestamp']
-    if time > new_stream_delay:
-        split_stream.append([])
-        anomaly_count.append(0)
-        ends.append(time + stream_length)
-        window_right += 1
-        new_stream_delay += stream_spacing
-    while window_left > window_right or time > ends[window_left]:
-        window_left += 1
-
-    index = 0
-    for i in range(len(oa)):
-        if row['icao'] == oa[i]:
-            index = 2 * i
-    if row['event'] == 'departed':
-        index += 1
-
-    for i in range(window_left, window_right):
-        if(row['timestamp'] in anomalous_events_timestamps):
-            anomaly_count[i] += 1
-        if len(split_stream[i]) == 0:
-            entry = [0.0 for i in range((len(oa) * 2 * (1 + lead_lag)) + time_variable + daytime_variable)]
-        else:
-            entry = split_stream[i][-1].copy()
-        if (lead_lag):
-            old_entry = entry[:len(oa)*2]
-            if time_variable:
-                entry[-1] = row['timestamp']
-            if daytime_variable:
-                entry[-1 - time_variable] = row['timestamp'] % day
-            if no_extrapollation:
-                split_stream[i].append(entry)
-            entry[index] += 1
-            if no_extrapollation:
-                split_stream[i].append(entry)
-            split_stream[len(oa)*2: len(oa)*4] = old_entry
-            split_stream[i].append(entry)
-        else:
-            if time_variable:
-                entry[-1] = row['timestamp']
-            if daytime_variable:
-                entry[-1 - time_variable] = row['timestamp'] % day
-            if no_extrapollation:
-                split_stream[i].append(entry)
-            entry[index] += 1
-            split_stream[i].append(entry)
-
-signatures = []
-
-
-for stream in split_stream:
-    np_stream = np.array(stream)
-    stream = normalise_stream(np_stream)
-    sig = esig.stream2sig(np_stream, depth)
-    sig = normalise_signature(sig)
-    signatures.append(sig)
+        for i in range(window_left, window_right):
+            if(row['timestamp'] in anomalous_events_timestamps):
+                anomaly_count[i] += 1
+            if len(split_stream[i]) == 0:
+                entry = [0.0 for i in range(features * (1 + lead_lag))]
+            else:
+                entry = split_stream[i][-1].copy()
+            if (lead_lag):
+                old_entry = entry[:features]
+                if time_variable:
+                    entry[features-1] = row['timestamp']
+                if daytime_variable:
+                    entry[features - 1 - time_variable] = row['timestamp'] % day
+                if no_extrapollation:
+                    split_stream[i].append(entry.copy())
+                entry[index] += 1
+                if no_extrapollation:
+                    split_stream[i].append(entry.copy())
+                entry[features:] = old_entry
+                split_stream[i].append(entry.copy())
+            else:
+                if time_variable:
+                    entry[-1] = row['timestamp']
+                if daytime_variable:
+                    entry[-1 - time_variable] = row['timestamp'] % day
+                if no_extrapollation:
+                    split_stream[i].append(entry.copy())
+                entry[index] += 1
+                split_stream[i].append(entry.copy())
+    return split_stream
 
 
 
-clean_split_stream = []
-ends = []
-window_left = 0
-window_right = 0
-new_stream_delay = clean_events['timestamp'][0] - 1
 
-for _, row in clean_events.iterrows():
-    time = row['timestamp']
-    if time > new_stream_delay:
-        clean_split_stream.append([])
-        ends.append(time + stream_length)
-        window_right += 1
-        new_stream_delay += stream_spacing
-    while window_left > window_right or time > ends[window_left]:
-        window_left += 1
+def calculate_signatures(split_stream, depth):
 
-    index = 0
-    for i in range(len(oa)):
-        if row['icao'] == oa[i]:
-            index = 2 * i
-    if row['event'] == 'departed':
-        index += 1
+    signatures = []
 
-    for i in range(window_left, window_right):
-        if len(clean_split_stream[i]) == 0:
-            entry = [0.0 for i in range(len(oa) * 2 + time_variable + daytime_variable)]
-        else:
-            entry = clean_split_stream[i][-1].copy()
-        if (lead_lag):
-            old_entry = entry[:len(oa)*2]
-            if time_variable:
-                entry[-1] = row['timestamp']
-            if daytime_variable:
-                entry[-1 - time_variable] = row['timestamp'] % day
-            if no_extrapollation:
-                clean_split_stream[i].append(entry)
-            entry[index] += 1
-            if no_extrapollation:
-                split_stream[i].append(entry)
-            clean_split_stream[len(oa)*2: len(oa)*4] = old_entry
-            clean_split_stream[i].append(entry)
-        else:
-            if time_variable:
-                entry[-1] = row['timestamp']
-            if daytime_variable:
-                entry[-1 - time_variable] = row['timestamp'] % day
-            if no_extrapollation:
-                clean_split_stream[i].append(entry)
-            entry[index] += 1
-            clean_split_stream[i].append(entry)
 
-clean_signatures = []
+    for stream in split_stream:
+        np_stream = np.array(stream)
+        sig = esig.stream2sig(np_stream, depth)
+        sig = normalise_signature(sig)
+        signatures.append(sig)
 
-for stream in clean_split_stream:
-    np_stream = np.array(stream)
-    stream = normalise_stream(np_stream)
-    sig = esig.stream2sig(np_stream, depth)
-    sig = normalise_signature(sig)
-    clean_signatures.append(sig)
+    return signatures
 
-df = pd.DataFrame(signatures)
-clean_df = pd.DataFrame(clean_signatures)
+
 #desination file name
-filename = 'C:\\Users\\dmitr\\Desktop\\project work\\dummy data\\signatures_' + str(depth) +'_'+ str(stream_length / day) +'_' + str(stream_spacing / day) +'_time_' * time_variable + '_daytime_' * daytime_variable + '_leadlag_' * lead_lag+ '_no_extrapolation_' * no_extrapollation + '.csv'
-clean_filename = 'C:\\Users\\dmitr\\Desktop\\project work\\dummy data\\signatures_' + str(depth) +'_'+ str(stream_length / day) +'_' + str(stream_spacing / day) +'_time_' * time_variable + '_daytime_' * daytime_variable + '_leadlag_' * lead_lag+ '_no_extrapolation_' * no_extrapollation + 'CLEAN.csv'
-
-
-anomaly_count_labels = pd.DataFrame(anomaly_count, columns = ["count"])
-#destination file name
-anomaly_count_filename = 'C:\\Users\\dmitr\\Desktop\\project work\\dummy data\\signatures_' + str(depth) +'_'+ str(stream_length / day) + '_' + str(stream_spacing / day) +'_time_' * time_variable + '_daytime_' * daytime_variable + '_leadlag_' * lead_lag+ '_no_extrapolation_' * no_extrapollation + 'ANOMALYCOUNT_' + '.csv'
-
-
-df.to_csv(filename)
-clean_df.to_csv(clean_filename)
-anomaly_count_labels.to_csv(anomaly_count_filename)
-print(filename)
+#filename = 'C:\\Users\\dmitr\\Desktop\\project work\\dummy data\\signatures_' + str(depth) +'_'+ str(stream_length / day) +'_' + str(stream_spacing / day) +'_time_' * time_variable + '_daytime_' * daytime_variable + '_leadlag_' * lead_lag+ '_no_extrapolation_' * no_extrapollation + '.csv'

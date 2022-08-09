@@ -3,33 +3,44 @@ import numpy as np
 import esig 
 import random
 
-data = []
-clean_data = []
+hour = 3600
+day = 24 * hour
 
+#distances between airports in time
 times = [
-[0, 3*3600, 0, 0, 4*3600],
-[3*3600, 0, 6*3600, 4*3600, 0],
-[0, 6*3600 ,0, 0, 0],
-[0, 4*3600, 0, 0, 7*3600],
-[4*3600, 0, 0, 7*3600, 0]
+[0, 3*hour, 0, 0, 4*hour],
+[3*hour, 0, 6*hour, 4*hour, 0],
+[0, 6*hour ,0, 0, 0],
+[0, 4*hour, 0, 0, 7*hour],
+[4*hour, 0, 0, 7*hour, 0]
 ]
 
+file_location = 'C:\\Users\\dmitr\\Desktop\\project work\\dummy data'
+#edges present in the graph
 edges = [(0,1), (0,4), (1, 0), (1, 2), (1, 3), (2, 1), (3, 1), (3, 4), (4, 0), (4, 3)]
+
+#weights for regulating edge relative frequency in 2nd type of anomaly
 anomaly_weights = (1.5, 0.5, 1.5, 1, 0.5, 1, 0.5, 1.5, 0.5, 1.5)
+#delay between chain flights in 1st kind of anomaly
 anomaly_chaining_delay_left = 10800
 anomaly_chaining_delay_right = 12000
+
+#random variation in flight length
 flight_len_spread = 0.2
 
+data = []
+clean_data = []
+#timestamp is the running record of current timestamp
 timestamp = 0
-timestamp_2 = 0
+timestamp_clean = 0
 anomaly_labels = []
 
 for i in range(500000):
-    timestamp_2 += (169 + random.randrange(-60, 60))
+    timestamp_clean += (169 + random.randrange(-60, 60))   #random delay between flights
     (a, b) = random.choice(edges)
-    delay = times[a][b] * (random.random() * flight_len_spread + (1 - flight_len_spread/2))
-    clean_data.append([a, timestamp_2, "departed"])
-    clean_data.append([b, timestamp_2+delay, "landed"])
+    delay = times[a][b] * (random.random() * flight_len_spread + (1 - flight_len_spread/2)) #length of the flight
+    clean_data.append([a, timestamp_clean, "departed"])
+    clean_data.append([b, timestamp_clean+delay, "landed"])
 
 for i in range(200000):
     timestamp += (169 + random.randrange(-60, 60))
@@ -45,9 +56,9 @@ for i in range(3000):
     delay = times[a][b] * (random.random() * flight_len_spread + (1 - flight_len_spread/2))
     data.append([a, timestamp, "departed"])
     data.append([b, timestamp+delay, "landed"])
-    if(a == 0 and b == 1):
-        delay2 = random.randrange(anomaly_chaining_delay_left, anomaly_chaining_delay_right)
-        delay3 = 6 * 3600 * (random.random() * flight_len_spread + (1 - flight_len_spread/2))
+    if(a == 0 and b == 1):                     #chaining only applies to this pair
+        delay2 = random.randrange(anomaly_chaining_delay_left, anomaly_chaining_delay_right)               #delay between chained flights
+        delay3 = 6 * 3600 * (random.random() * flight_len_spread + (1 - flight_len_spread/2))              #length of a second flight
         data.append([1, timestamp + delay + delay2, "departed"])
         anomaly_labels.append([timestamp + delay + delay2, 1])
         data.append([2, timestamp + delay + delay2 + delay3, "landed"])
@@ -86,6 +97,6 @@ df = df.sort_values("timestamp")
 df_clean = df_clean.sort_values("timestamp")
 
 #destination files for data and anomalies
-df.to_csv('C:\\Users\\dmitr\\Desktop\\project work\\dummy data\\data.csv')
-df_clean.to_csv('C:\\Users\\dmitr\\Desktop\\project work\\dummy data\\clean_data.csv')
-df_anomaly.to_csv('C:\\Users\\dmitr\\Desktop\\project work\\dummy data\\data_anomaly_labels.csv')
+df.to_csv(file_location + '\\data.csv')
+df_clean.to_csv(file_location + '\\clean_data.csv')
+df_anomaly.to_csv(file_location + '\\data_anomaly_labels.csv')
