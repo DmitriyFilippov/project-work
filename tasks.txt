@@ -5,3 +5,4 @@ Tasks:
 3) compare above against each other, recording results
 4) Try methodology on real dataset (preprocessed)
 5) Summarise methodology and results in Jupyter notebook
+

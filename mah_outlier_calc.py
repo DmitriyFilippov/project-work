@@ -8,13 +8,15 @@ import numpy as np
 from sklearn.ensemble import IsolationForest
 
 #signatures file reading
-df = pd.read_csv('C:\\Users\\dmitr\\Desktop\\project work\\dummy data\\signatures_2_7.0_2.0_time__daytime_.csv')
-df_clean = pd.read_csv('C:\\Users\\dmitr\\Desktop\\project work\\dummy data\\signatures_2_7.0_2.0_time__daytime_CLEAN.csv')
+filename = 'C:\\Users\\dmitr\\Desktop\\project work\\dummy data\\signatures_2_7.0_2.0_time__daytime_'
+#filename = 'C:\\Users\\dmitr\\Desktop\\project work\\dummy data\\signatures_2_7.0_2.0_time__daytime__no_extrapolation_'
+df = pd.read_csv(filename + '.csv')
+df_clean = pd.read_csv(filename + 'CLEAN.csv')
 
 df = df.dropna()
 signatures = df.to_numpy()
 clean_signatures = df_clean.to_numpy()
-outlier_count_pd = pd.read_csv('C:\\Users\\dmitr\\Desktop\\project work\\dummy data\\signatures_2_7.0_2.0_time__daytime__ANOMALYCOUNT_.csv')
+outlier_count_pd = pd.read_csv(filename + 'ANOMALYCOUNT_.csv')
 outlier_count = outlier_count_pd['count'].to_numpy()
 labels = [outlier_count[i] > 0 for i in range(len(outlier_count))]
 dim = len(signatures[0])
@@ -24,7 +26,7 @@ def evaluate(estimate, label):
 
 
 #MAH distance estimation
-def mah_distance():
+def mah_distance(signatures):
 
       # Covariance matrix
       covariance  = np.cov(signatures , rowvar=False) + np.identity(dim) * 1e-6
@@ -103,6 +105,3 @@ def isolation_forest():
 
       print("evaluate isolation forest")
       print(evaluate(predict_label, labels))
-
-isolation_forest()
-mah_distance()
