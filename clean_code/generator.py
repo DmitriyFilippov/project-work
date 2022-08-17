@@ -34,65 +34,72 @@ clean_data = []
 timestamp = 0
 timestamp_clean = 0
 anomaly_labels = []
-
+id = 0
 for i in range(500000):
     timestamp_clean += (169 + random.randrange(-60, 60))   #random delay between flights
     (a, b) = random.choice(edges)
     delay = times[a][b] * (random.random() * flight_len_spread + (1 - flight_len_spread/2)) #length of the flight
-    clean_data.append([a, timestamp_clean, "departed"])
-    clean_data.append([b, timestamp_clean+delay, "landed"])
+    clean_data.append([a, timestamp_clean, "takeoff", id])
+    clean_data.append([b, timestamp_clean+delay, "landed", id])
+    id += 1
 
 for i in range(200000):
     timestamp += (169 + random.randrange(-60, 60))
     (a, b) = random.choice(edges)
     delay = times[a][b] * (random.random() * flight_len_spread + (1 - flight_len_spread/2))
-    data.append([a, timestamp, "departed"])
-    data.append([b, timestamp+delay, "landed"])
+    data.append([a, timestamp, "takeoff", id])
+    data.append([b, timestamp+delay, "landed", id])
+    id+= 1
 
 #chaining anomaly
 for i in range(3000):
     timestamp += (169 + random.randrange(-60, 60))
     (a, b) = random.choice([x for x in edges if x != (1, 2)])
     delay = times[a][b] * (random.random() * flight_len_spread + (1 - flight_len_spread/2))
-    data.append([a, timestamp, "departed"])
-    data.append([b, timestamp+delay, "landed"])
+    data.append([a, timestamp, "takeoff", id])
+    data.append([b, timestamp+delay, "landed", id])
+    id += 1
     if(a == 0 and b == 1):                     #chaining only applies to this pair
         delay2 = random.randrange(anomaly_chaining_delay_left, anomaly_chaining_delay_right)               #delay between chained flights
         delay3 = 6 * 3600 * (random.random() * flight_len_spread + (1 - flight_len_spread/2))              #length of a second flight
-        data.append([1, timestamp + delay + delay2, "departed"])
-        anomaly_labels.append([timestamp + delay + delay2, 1])
-        data.append([2, timestamp + delay + delay2 + delay3, "landed"])
-        anomaly_labels.append([timestamp + delay + delay2 + delay3, 1])
+        data.append([1, timestamp + delay + delay2, "takeoff", id])
+        anomaly_labels.append([id, 1])
+        data.append([2, timestamp + delay + delay2 + delay3, "landed", id])
+        anomaly_labels.append([id, 1])
+        id += 1
 
 for i in range(100000):
     timestamp += (169 + random.randrange(-60, 60))
     (a, b) = random.choice(edges)
     delay = times[a][b] * (random.random() * flight_len_spread + (1 - flight_len_spread/2))
-    data.append([a, timestamp, "departed"])
-    data.append([b, timestamp+delay, "landed"])
+    data.append([a, timestamp, "takeoff", id])
+    data.append([b, timestamp+delay, "landed", id])
+    id += 1
 
 #rate anomaly
 for i in range(3000):
     timestamp += (169 + random.randrange(-60, 60))
     (a, b) = random.choices(edges, weights = anomaly_weights)[0]
     delay = times[a][b] * (random.random() * flight_len_spread + (1 - flight_len_spread/2))
-    data.append([a, timestamp, "departed"])
-    anomaly_labels.append([timestamp, 2])
-    data.append([b, timestamp+delay, "landed"])
-    anomaly_labels.append([timestamp + delay, 2])
+    data.append([a, timestamp, "takeoff", id])
+    anomaly_labels.append([id, 2])
+    data.append([b, timestamp+delay, "landed", id])
+    anomaly_labels.append([id, 2])
+    id += 1
 
 
 for i in range(100000):
     timestamp += (169 + random.randrange(-60, 60))
     (a, b) = random.choice(edges)
     delay = times[a][b] * (random.random() * flight_len_spread + (1 - flight_len_spread/2))
-    data.append([a, timestamp, "departed"])
-    data.append([b, timestamp+delay, "landed"])
+    data.append([a, timestamp, "takeoff", id])
+    data.append([b, timestamp+delay, "landed", id])
+    id += 1
 
 
-df = pd.DataFrame(data, columns = ["icao", "timestamp", "event"])
-df_anomaly = pd.DataFrame(anomaly_labels, columns = ['timestamp', 'type'])
-df_clean = pd.DataFrame(clean_data, columns = ["icao", "timestamp", "event"])
+df = pd.DataFrame(data, columns = ["icao", "timestamp", "event", "id"])
+df_anomaly = pd.DataFrame(anomaly_labels, columns = ['id', 'type'])
+df_clean = pd.DataFrame(clean_data, columns = ["icao", "timestamp", "event", "id"])
 df = df.sort_values("timestamp")
 df_clean = df_clean.sort_values("timestamp")
 

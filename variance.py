@@ -93,13 +93,15 @@ def variance(paths, corpus, order, cache_dir=None,
         https://joblib.readthedocs.io/en/latest/generated/joblib.Parallel.html
         Parallel execution is disabled by default.
     """
-    sigs, A_inv = Memory(cache_dir, verbose=0).cache(_prepare)(corpus, order,
+    corpus_ = list(map(lambda list: np.array(list), corpus))
+    sigs, A_inv = Memory(cache_dir, verbose=0).cache(_prepare)(corpus_, order,
                                                                enable_progress,
                                                                **parallel_kwargs)
 
     res = []
     for path in tqdm(paths, disable=not enable_progress, desc="Computing variances"):
-        sig = _sig(path, order)
+        path_ = np.array(path)
+        sig = _sig(path_, order)
         a = sig - sigs[:, :len(sig)]
         res.append(np.diag(np.dot(a, A_inv).dot(a.T)).min())
 
